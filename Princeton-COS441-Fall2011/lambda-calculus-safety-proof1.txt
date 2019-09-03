@@ -1,0 +1,427 @@
+Type Safety
+-----------
+Simply Typed Lambda Calculus Syntax:
+
+(types)       t ::= bool | t1 -> t2
+(expressions) e ::= x | true | false | if e1 then e2 else e3 
+                  | fun f (x:t1):t2 = e | e1 e2
+(values)      v ::= true | false | fun f (x:t1):t2 = e
+(contexts)    G ::= . | G,x:t
+
+Call-by-value Evaluation:
+
+e --> e'
+------------------------------------------------------- (E-if0)
+if e then e1 else e2 --> if e' then e1 else e2
+ 
+------------------------------------- (E-if1)
+if true then e1 else e2 --> e1
+ 
+------------------------------------- (E-if2)
+if false then e1 else e2 --> e2
+ 
+e1 --> e1'
+-------------------- (E-app1)
+e1 e2 --> e1' e2
+ 
+e2 --> e2'
+-------------------- (E-app2)
+v e2 --> v e2'
+ 
+------------------------------------------------------------------- (E-app3)
+(fun f(x:t1):t2 = e) v --> e[v/x][(fun f(x:t1):t2 = e)/f]
+ 
+ 
+Typing:
+ 
+G(x) = t
+----------------- (T-var)
+G |-- x : t
+ 
+--------------------- (T-true)
+G |-- true : bool
+ 
+---------------------- (T-false)
+G |-- false : bool
+ 
+G |-- e : bool     G |-- e1 : t    G |-- e2 : t
+----------------------------------------------------- (T-if)
+G |-- if e then e1 else e2 : t
+ 
+G, f:t1->t2, x:t1 |-- e : t2    f not= x     f,x not in H
+-------------------------------------------------------------- (T-fun)
+G |-- fun f (x:t1):t2 = e : t1 -> t2
+ 
+G |-- e1 : t1 -> t2    G |-- e2 : t1
+------------------------------------------ (T-app)
+G |-- e1 e2 : t2
+
+=============================================
+Canonical Forms Lemma
+
+Idea: Given a type, want to know something about the shape of the value
+If . |- v: t then
+  If t = bool then v = true or v = false;
+  If t = t1 -> t2 then v = fun f (x: t1) : t2 = e
+
+Proof:
+By inspection of the typing rules. 
+
+=============================================
+Exchange Lemma
+
+If H |- e : t then H' |- e : t,
+  where H  = G, x:t1, y:t2, G'
+  and   H' = G, y:t2, x:t1, G'
+
+Proof by induction on derivation of H |- e:t
+  
+Comment:  In proofs by induction on a typing derivation,
+there is 1 case per typing rule.  In each case, you get
+to assume that the typing rule, the conclusion of the
+typing rule and its premises are valid.  You may use
+the induction hypothesis on the premises in the rule.
+The inductive hypothesis is the same as the statement of
+the lemma.  In other words, the IH says:
+
+If G, x:t1, y:t2, G' |- e : t for any premise in the typing rule under consideration
+(where G and G' are any typing contexts) then we know that G, y:t2, x:t1, G' |- e : t.
+
+-----------
+Case: T-var
+-----------
+
+Given this typing rule:
+ 
+(p1) H(x) = t
+----------------- (T-var)
+H |-- x : t
+
+We now proceed with the proof:
+ 
+H gives the same result as H' on any variable x because H and H'
+associate the same variables with the same types.  In other words:
+
+(1) H'(x) = H(x) = t
+
+(2) H' |- x : t              (by rule T-var and (1))
+
+------------
+case: T-true
+------------
+
+Given this typing rule:
+
+--------------------- (T-true)
+H |-- true : bool
+
+We now proceed with the proof:
+
+H' |-- true : bool          (by typing rule T-true -- the rule T-true
+                             says "true" has type bool in any context,
+                             including the context H')
+
+-------------
+case: T-false
+-------------
+
+Given this typing rule:
+
+--------------------- (T-false)
+H |-- false : bool
+
+We now proceed with the proof:
+
+H' |-- false : bool          (by typing rule T-false -- the rule T-false
+                             says "false" has type bool in any context,
+                             including the context H')
+
+-------------
+case: T-if
+-------------
+
+Given this typing rule (where I labeled the premises in the rule
+p1, p2, p3 for future reference):
+ 
+(p1) H |-- e : bool     (p2) H |-- e1 : t    (p3) H |-- e2 : t
+-------------------------------------------------------------- (T-if)
+H |-- if e then e1 else e2 : t
+
+we proceed with the proof:
+
+(1) H' |-- e : bool       (by p1 and IH)
+(2) H' |-- e1 : t         (by p2 and IH)
+(3) H' |-- e2 : t         (by p3 and IH)
+
+(4) H' |-- if e then e1 else e2 : t    (by (1) (2) (3) and the T-if typing rule)
+
+-------------
+case: T-fun
+-------------
+
+Given this typing rule:
+
+(p1) H, f:t1->t2, x:t1 |-- e : t2    f not= x     f,x not in H
+------------------------------------------------------------------- (T-fun)
+H |-- fun f (x:t1):t2 = e : t1 -> t2
+
+we proceed with the proof:
+
+(1) H', f:t1->t2, x:t1 |-- e : t2            (by p1 and IH)
+
+(2) H' |-- fun f (x:t1):t2 = e : t1 -> t2    (by (1) and T-fun typing rule)
+
+-------------
+case: T-app
+-------------
+
+(p1) H |-- e1 : t1 -> t2    (p2) H |-- e2 : t1
+----------------------------------------------- (T-app)
+H |-- e1 e2 : t2
+
+we proceed with the proof:
+
+(1) H' |-- e1 : t1 -> t2       (by p1 and IH)
+(2) H' |-- e2 : t1             (by p2 and IH)
+(3) H' |-- e1 e2 : t2          (by (1) (2) and T-app typing rule)
+
+QED -- we have analyzed all the cases.
+
+
+=============================================
+Weakening Lemma
+
+If G |- e : t then G, x:t' |- e : t (provided x is not in G)
+
+Proof by induction on derivation of G |- e : t
+
+Comment:  As in the proof of the Exchange lemma, this is a proof
+by induction on a typing derivation and therefore 
+there is 1 case per typing rule.  In each case, you get
+to assume that the typing rule, the conclusion of the
+typing rule and its premises are valid.  You may use
+the induction hypothesis on the premises in the rule.
+The inductive hypothesis is the same as the statement of
+the lemma.  In other words, the IH says:
+
+If G |- e : t for any premise in the typing rule under consideration
+(where G is any typing context) then we know that G, x:t' |- e : t.
+
+-----------
+Case: T-var
+-----------
+
+Given this typing rule:
+ 
+(p1) G(y) = t
+----------------- (T-var)
+G |-- y : t
+
+We now proceed with the proof:
+
+Since G(y) = t, we know that y is a variable in G.  
+Since a condition of the weakening lemma is that x is not
+a variable in G, we know that x and y are different variables.
+Moreover, consider the context H = G,x:t'.  We know that
+since x is not the same as y:
+
+(1) H(y) = G(y) = t         
+
+Continuing the proof:
+
+(2) H |- y : t              (by rule T-var and (1))
+
+
+------------
+case: T-true
+------------
+
+Given this typing rule:
+
+--------------------- (T-true)
+G |-- true : bool
+
+We now proceed with the proof:
+
+G,x:t' |-- true : bool          (by typing rule T-true -- the rule T-true
+                                 says "true" has type bool in any context,
+                                 including the context G,x:t')
+
+------------
+case: T-false
+------------
+
+Given this typing rule:
+
+--------------------- (T-false)
+G |-- false : bool
+
+We now proceed with the proof:
+
+G,x:t' |-- false : bool          (by typing rule T-false -- the rule T-false
+                                 says "false" has type bool in any context,
+                                 including the context G,x:t')
+
+-------------
+case: T-if
+-------------
+
+Given this typing rule (where I labeled the premises in the rule
+p1, p2, p3 for future reference):
+ 
+(p1) G |-- e : bool     (p2) G |-- e1 : t    (p3) G |-- e2 : t
+-------------------------------------------------------------- (T-if)
+G |-- if e then e1 else e2 : t
+
+we proceed with the proof:
+
+(1) G,x:t' |-- e : bool       (by p1 and IH)
+(2) G,x:t' |-- e1 : t         (by p2 and IH)
+(3) G,x:t' |-- e2 : t         (by p3 and IH)
+
+(4) G,x:t' |-- if e then e1 else e2 : t    (by (1) (2) (3) and the T-if typing rule)
+
+-------------
+case: T-fun
+-------------
+
+Given this typing rule:
+
+(p1) G, f:t1->t2, y:t1 |-- e : t2    f not= y     f,y not in Dom(G)
+------------------------------------------------------------------- (T-fun)
+G |-- fun f (y:t1):t2 = e : t1 -> t2
+
+(Notice that I picked a name y for the identifier in the function so that it
+does not clash with the variables mentioned in the lemma statement.  We can
+pick whichever name we want for "bound" variables such as f and y in expressions.
+A compiler can always change the names of variables to make them different from
+the names that anyone else uses without change the meaning of a program or how
+it operates.)
+
+We proceed with the proof:
+
+(1) G, f:t1->t2, y:t1, x:t' |-- e : t2            (by p1 and IH)
+
+(2) G, x:t', f:t1->t2, y:t1 |-- e : t2            (by (1) and Exchange Lemma twice)
+
+(2) G, x:t' |-- fun f (y:t1):t2 = e : t1 -> t2    (by (2) and T-fun typing rule)
+
+-------------
+case: T-app
+-------------
+
+(p1) G |-- e1 : t1 -> t2    (p2) G |-- e2 : t1
+----------------------------------------------- (T-app)
+G |-- e1 e2 : t2
+
+we proceed with the proof:
+
+(1) G,x:t' |-- e1 : t1 -> t2       (by p1 and IH)
+(2) G,x:t' |-- e2 : t1             (by p2 and IH)
+(3) G,x:t' |-- e1 e2 : t2          (by (1) (2) and T-app typing rule)
+
+QED -- we have analyzed all the cases.
+
+=============================================
+Substitution Preserves Typing
+
+If G, x:t |- e:t' and G |- v:t then G |- e[v/x]:t'.
+
+Proof:
+By induction on the derivation of G, x:t |- e:t'
+
+A few example cases (one case for each typing rule) below:
+
+Case:
+
+-------------------------
+G, x:t |- y: (G, x:t)(y) 
+
+Subcase 1: x = y
+  G, x:t |- x:t (note t = t')
+  Must prove G |- x[v/x]:t
+  Same as G |- v:t, which is our assumption
+
+Subcase 2: x != y
+  Must prove G | - y[v/x]:t'
+  Same as G |- y:t' which is
+	  G |- y: G(y) 
+
+Case:
+
+-------------------
+G, x:t |- true:bool
+
+Must prove G |- true[v/x]:bool
+Same as G |- true : bool (which can be proven by typing rule T-true)
+
+Case:
+
+(1) G, x:t |- e1:t1->t2   (2) G, x:t |- e2:t1
+---------------------------------------------
+         G, x:t |- e1 e2 : t2
+
+(3) G |- e1[v/x]:t1->t2         (1 and IH)
+(4) G |- e2[v/x]:t1             (2 and IH)
+
+Therefore,
+
+G |- (e1[v/x]) (e2[v/x]):t2     (3, 4, and typing rule T-app)
+
+Same as G |- (e1 e2)[v/x]:t2    (By definition of substitution)
+
+
+Type Preservation of One-step evaluation
+----------------------------------------
+If . |- e:t and e -> e'
+then . |- e': t
+
+Proof: By induction on the derivation of e -> e'
+
+Case:
+
+               (1) e1 -> e1'
+-----------------------------------------------
+if e1 then e2 else e3 -> if e1' then e2 else e3
+
+(2) . |- if e1 then e2 else e3 : t  (by assumption)
+(3) . |- e1 : bool		(by 2 and inversion of T-if typing rule)
+(4) . |- e2 : t			(by 2 and inversion of T-if typing rule)
+(5) . |- e3 : t			(by 2 and inversion of T-if typing rule)
+(6) . |- e1': bool		(by 1, 3, IH)
+. |- if e1' then e2 else e3 : t	(by 6, 4, 5)
+
+Case:
+
+-----------------------------
+if true then e2 else e3 -> e2
+
+(1) . |- if true then e2 else e3 : t   (by assumption)
+(2) . |- e2 : t 	(by 1 and inversion of T-if typing rule)
+
+Case:
+
+-----------------------------
+if false then e2 else e3 -> e3
+
+(1) . |- if false then e2 else e3 : t  (by assumption)
+(2) . |- e3 : t 	(by 1 and inversion)
+
+Case:
+
+-----------------------------------------------------------
+(fun f (x:t1) : t2 = e) v -> e[v/x][funf (x:t) : t2 = e /f]
+
+(1) |- (fun f (x:t1) : t2 = e) v : t2   (by assumption)
+(2) |- fun f (x:t1) : t2 = e : t1 -> t2 (by 1 and inversion of T-app)
+(3) |- v: t1                            (by 1 and inversion of T-app)
+(4) f: t1 -> t2, x:t |- e: t2           (by 2 and inversion of T-fun)
+(5) f: t1 -> t2 |- e[v/x]:t2            (by 3 and 4 and substitution lemma)
+(6) |- e[v/x][fun f (x: t1) : t2 = e/f] : t2
+                                        (by 2, 5 and substitution lemma)
+
+(end of case)
+
+(cases for E-app1 and E-app2 similar to the case for E-if0 -- try them for practice)
+
+(end proof)

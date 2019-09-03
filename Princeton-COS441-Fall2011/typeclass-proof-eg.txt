@@ -1,0 +1,55 @@
+Symmetry:  For all elements v::a and w::a where Eq a, (v == w) = (w == v)
+
+data ThreeD a = Point a a a
+
+instance Eq a => Eq (ThreeD a) where
+  Point x1 y1 z1 == Point x2 y2 z2 = (x1 == x2) && (y1 == y2) && (z1 ==z2)
+
+Proof of Symmetry
+For the case v::ThreeD a and w::ThreeD a and Eq a.
+Let v be Point x1 y1 z1  (for some x1, y1, z1)
+Let w be Point x2 y2 z2  (for some x2, y2, z2)
+  v == w
+= Point x1 y1 z1 == Point x2 y2 z2       
+= (x1 == x2) && (y1 == y2) && (z1 == z2)  (By def of == at type ThreeD a)
+= (x2 == x1) && (y2 == y1) && (z2 == z1)  (By symmetry of == at type a)
+= Point x2 y2 z2 == Point x1 y1 z1        (By def of == at type ThreeD a) 
+= w == v
+
+instance Eq a => Eq [a] where
+  [] == []         = True
+  [] == (y:ys)     = False
+  (x:xs) == []     = False
+  (x:xs) == (y:ys) = (x==y) && (xs == ys)
+
+Proof of Symmetry
+For the case where v::[a] and w::[a] and Eq a
+Proof is by induction on the structure of the list v.
+
+case v = []   and w = []
+  v == w
+= [] == []
+= w == v                  (by definition of v and w)
+
+case v = []   and w = y:ys
+  v == w
+= False                   (by definition of == at type [a])
+= w == v                  (by definition of == at type [a])
+
+case v = x:xs and w = []
+  v == w
+= False                   (by definition of == at type [a])
+= w == v                  (by definition of == at type [a])
+
+case v = x:xs and w = y:ys
+IH: (xs == ys) = (ys == xs)
+
+  v == w
+= (x:xs) == (y:ys)
+= (x == y) && (xs == ys)      (by definition of == at type [a])
+= (y == x) && (xs == ys)      (by symmetry of == at type a)
+= (y == x) && (ys == xs)      (by IH)
+= (y:ys) == (x:xs)            (by definition of == at type [a])
+= w == v
+
+  

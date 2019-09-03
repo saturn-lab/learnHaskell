@@ -1,0 +1,75 @@
+Progress Lemma
+--------------
+
+If |- e:t, then either (a) e is a value or (b) e -> e' (that is, it's not stuck)
+
+Proof:
+
+By induction on the derivation of |- e:t
+
+Case:
+	------------
+	G |- x: G(x)
+
+This rule never applies because G = . (empty context)
+
+Case:
+	---------------
+	|- true : bool
+Satisfies (a) since true is a value.
+
+Case:
+	---------------
+	|- false : bool
+Satisfies (a) since false is a value.
+
+Case:
+	|- e1: bool |- e2:t |- e3:t
+	---------------------------
+	|- if e1 then e2 else e3 : t
+
+By IH and that e1 : bool,
+(a) e1 is a value, or
+(b) e1 -> e1'
+
+subcase (b)
+|- if e1 then e2 else e3 -> if e1' then e2 else e3 (by if op semantics)
+
+subcase (a)
+By canonical form lemma, since e1:bool is a value, 
+e1 = true or e1 = false
+Assume e1 = true, then
+|- if e1 then e2 else e3 -> e2 (if op semantics)
+Assume e1 = false, then
+|- if e1 then e2 else e3 -> e3 (if op semantics)
+
+Case:
+
+	|- f: t1 -> t2	x:t1 |- e : t2
+	------------------------------
+	   |- fun f (x:t1) = e
+
+Function is a value.
+
+Case:
+	|- e1: t1->t2	|-e2 : t2
+	-------------------------
+	    |- e1 e2 : t2
+
+By I.H., either (a) e1 is a value or (b) e1 -> e1'
+subcase (b) |- e1 e2 -> e1' e2	(application op semantics)
+
+subcase (a) e1 = v1
+
+By I.H., either (a) e2 is a value or (b) e2 -> e2'
+subcase (b) |- v1 e2 -> v1 e'
+
+subcase (a) then e2 = v2
+
+By canonical forms lemma and that e1: t1 -> t2,
+v1 is a function of the form: 
+	fun f (x:t1): t2 = e
+Therefore,
+|- (fun f (x:t1) t2 = e v2) -> e[v2/x][fun f (x:t1) : t2 = e / f]
+
+Case proved.
